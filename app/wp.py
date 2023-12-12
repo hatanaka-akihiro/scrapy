@@ -1,4 +1,5 @@
 import requests
+import urllib
 import json
 import logging
 import os
@@ -7,8 +8,7 @@ stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.INFO)
 logging.basicConfig(level=logging.INFO, handlers=[stream_handler])
 
-# API_TOKEN = os.environ.get('API_TOKEN')
-API_TOKEN = "!%7Mp21L4BI7mk4k@k@DzhiqV8HWUtS$9lFb4GRZ)WxQ&*uylLPyusq!kki$OWaz"
+API_TOKEN = os.environ.get('API_TOKEN')
 
 API_VERSION = 'v1.1'
 DOMAIN = 'support.questetra.com'
@@ -18,9 +18,8 @@ HEADERS = {'Authorization': 'Bearer {}'.format(API_TOKEN)}
 
 def get_posts(category):
     post_ids = []
-    number = 3
-    url = 'https://public-api.wordpress.com/rest/{}/sites/{}/posts/?number={}&order_by=ID&fields=ID&status=publish&category={}'.format(
-        API_VERSION, DOMAIN, number, category
+    url = 'https://public-api.wordpress.com/rest/{}/sites/{}/posts/?order=ASC&order_by=ID&fields=ID&status=publish&category={}'.format(
+        API_VERSION, DOMAIN, category
     )
     logging.info('url: %s', url)
     response = requests.get(url, headers=HEADERS)
@@ -29,8 +28,24 @@ def get_posts(category):
 
     jsonObj = json.loads(response.text)
     posts = jsonObj['posts']
-    logging.info('found: %d, posts.length: %d', jsonObj['found'], len(posts))
+    logging.info('found: %d, posts.length: %d, first: %d', jsonObj['found'], len(posts), posts[0]['ID'])
     post_ids.extend([post['ID'] for post in posts])
+
+    while 'next_page' in jsonObj['meta']:
+        next_page = jsonObj['meta']['next_page']
+        url = 'https://public-api.wordpress.com/rest/{}/sites/{}/posts/?order=ASC&order_by=ID&fields=ID&status=publish&category={}&page_handle={}'.format(
+            API_VERSION, DOMAIN, category, urllib.parse.quote(next_page)
+        )
+        logging.info('url: %s', url)
+        response = requests.get(url, headers=HEADERS)
+        if response.status_code != 200:
+            raise ValueError('response.status_code: {}'.format(response.status_code))
+
+        jsonObj = json.loads(response.text)
+        posts = jsonObj['posts']
+        logging.info('posts.length: %d, first: %d', len(posts), posts[0]['ID'])
+        post_ids.extend([post['ID'] for post in posts])
+
     return post_ids
 
 
