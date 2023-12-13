@@ -4,6 +4,6 @@ RUN apt-get -y update
 
 WORKDIR /app
 
-RUN pip install requests
+RUN pip install requests scrapy
 
 copy ./app /app
