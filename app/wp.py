@@ -16,9 +16,10 @@ DOMAIN = 'support.questetra.com'
 HEADERS = {'Authorization': 'Bearer {}'.format(API_TOKEN)}
 
 
-def get_posts(category):
-    url = 'https://public-api.wordpress.com/rest/{}/sites/{}/posts/?order=ASC&order_by=ID&fields=ID,URL,slug&status=publish&category={}'.format(
-        API_VERSION, DOMAIN, category
+def get_posts(file):
+    number = 100
+    url = 'https://public-api.wordpress.com/rest/{}/sites/{}/posts/?order=ASC&order_by=ID&fields=ID,URL,slug&status=publish&number={}'.format(
+        API_VERSION, DOMAIN, number
     )
     logging.info('url: %s', url)
     response = requests.get(url, headers=HEADERS)
@@ -28,8 +29,8 @@ def get_posts(category):
     jsonObj = json.loads(response.text)
     posts = jsonObj['posts']
     logging.info('found: %d, posts.length: %d, first: %d', jsonObj['found'], len(posts), posts[0]['ID'])
-    urls = []
-    urls.extend([post['URL'] for post in posts])
+    for post in posts:
+        file.write(post['URL'] + '\n')
 
     while 'next_page' in jsonObj['meta']:
         next_page = jsonObj['meta']['next_page']
@@ -42,9 +43,8 @@ def get_posts(category):
         jsonObj = json.loads(response.text)
         posts = jsonObj['posts']
         logging.info('posts.length: %d, first: %d', len(posts), posts[0]['ID'])
-        urls.extend([post['URL'] for post in posts])
-
-    return urls
+        for post in posts:
+            file.write(post['URL'] + '\n')
 
 
 def get_post(slug):
@@ -67,10 +67,9 @@ def save_file(category, id, content):
         f.write(content)
 
 
-category = 'developer-blog'
-urls = get_posts(category)
-for url in urls:
-    print(url)
+list_path = './urls.txt'
+with open(list_path, 'w') as file:
+    get_posts(file)
 
 #for slug in slugs:
 #    logging.info('slug: %s', slug)
