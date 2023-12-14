@@ -36,9 +36,9 @@ def get_articles():
 def save_body(url, body):
     # レスポンスを保存するファイルパスを決定
     parsed_url = urllib.parse.urlparse(url)
-    path = parsed_url.netloc + '/' + parsed_url.path
+    path = parsed_url.netloc + parsed_url.path
     if path.endswith('/'):
-        path = path.substring(0, path.length - 1) + '.html'
+        path = path[:-1] + '.html'
     elif path.endswith('.html') == False:
         path = path + '.html'
     path = './data/' + path
